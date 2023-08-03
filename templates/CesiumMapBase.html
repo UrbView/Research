@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+		<meta charset="utf-8">
+		<!-- Include the CesiumJS JavaScript and CSS files -->
+		<script src="https://cesium.com/downloads/cesiumjs/releases/1.107.1/Build/Cesium/Cesium.js"></script>
+		<link href="https://cesium.com/downloads/cesiumjs/releases/1.107.1/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+    <link href="/static/css/login.css" rel="stylesheet">
+    <link href="/static/css/searchbar.css" rel="stylesheet">
+	</head>
+	<body>
+    <div id="header">
+      <img src="/static/images/global/logo.png" style="background-color: rgba(255, 255, 255, 0.85); border-radius: 15px; position: fixed; z-index: 99999; cursor:pointer; transition: transform 0.5s ease" onmouseover="this.style.transform = 'scale(1.05)'" onmouseout="this.style.transform = 'scale(1)'">
+      <img src="/static/images/global/profile.png">
+    </div>
+
+    <form id="loginForm" class="loginForm">
+      <h3>Login Here</h3>
+
+        <label for="username">Username</label>
+        <input type="text" placeholder="Enter your username" id="username">
+
+        <label for="password">Password</label>
+        <input type="password" placeholder="Enter your password" id="password">
+
+        <button class="loginForm" onclick="login(event)">Log In</button>
+    </form>
+
+    <div id="searchBar">
+    </div>
+
+    <div id="baseLayerPicker">
+    </div>
+    
+		<div id="cesiumContainer" style="width:100%; height:100%; position: absolute; top: 0; left: 0;"></div>
+
+		<script type="text/javascript">
+			// Cesium TOKEN
+      Cesium.Ion.defaultAccessToken = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI3YjY4NzM4ZS0wMWFiLTRlMWMtOWE3ZS04MDc2NjJlN2FmN2IiLCJpZCI6MTU3MTA2LCJpYXQiOjE2OTA1NjQ0ODl9.BZzGBgyt0pLYPRUqLouf-hwmqnozA7ELlr05YijGJvw"
+      
+      // Map configuration
+      var options = {animation: false, baseLayer: false, baseLayerPicker: new Cesium.BaseLayerPicker("baseLayerPicker"), fullscreenButton: false, homeButton: false, infoBox: false, 
+        sceneModePicker: true, selectionIndicator: false, timeline: false, navigationHelpButton: false, navigationInstructionsInitiallyVisible: false,
+      };
+
+      // Create widget
+      var widget = new Cesium.Viewer("cesiumContainer", options);
+
+      // Add UrbView custom ImageryProvider
+      widget.baseLayerPicker.viewModel.imageryProviderViewModels.push(new Cesium.ProviderViewModel({
+        name: "Danger Map",
+        tooltip: "Danger Map of Hamburg according to UrbView AI model.",
+        iconUrl: "/static/images/services/heatmap-icon.png",
+        category: "UrbView",
+        creationFunction: function() {
+          // Full globe imagery provider
+          const globeImageryProvider = new Cesium.OpenStreetMapImageryProvider({
+            url: "https://tile.openstreetmap.org/"
+          });
+
+          // UrbView Danger Map imagery provider from image
+          // Image must have shape [H, W, 4] where 4 corresponds to [R, G, B, H], and H is the alpha channel
+          const hamburgBoxCoordinates = [[9.708045, 53.738015], [10.325752, 53.398395]]  // [[West, North], [East, South]]
+          const imageUrl = "/static/resources/heatmap_img.png";
+          const dangerMapImageryProvider = new Cesium.SingleTileImageryProvider({
+            url: imageUrl,
+            rectangle: Cesium.Rectangle.fromDegrees(hamburgBoxCoordinates[0][0], hamburgBoxCoordinates[1][1], hamburgBoxCoordinates[1][0], hamburgBoxCoordinates[0][1]),
+            hasAlphaChannel: true,
+          });
+          
+         return [globeImageryProvider, dangerMapImageryProvider]
+        }
+       })
+      )
+			
+			// Fly to Hamburg center
+      const zoom = 5000
+      const hamburgCenterCoordinates = [9.993682, 53.551086]  // [Longitude, Latitude]
+      const hamburgCartesianCoordinates = Cesium.Cartesian3.fromDegrees(hamburgCenterCoordinates[0], hamburgCenterCoordinates[1], zoom)
+			
+			widget.camera.flyTo({
+			  destination: hamburgCartesianCoordinates,
+			})
+
+      // Login function
+      function login(event) {
+        // Prevent the default form submission behavior
+        event.preventDefault();
+
+        // Get the input values
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+    
+        // Here, you need to implement your database checking logic
+        // You can use AJAX to send a request to the server and validate the user and password
+    
+        // Example:
+        // Assume you have a function 'checkCredentials' that sends a request to the server
+        checkCredentials(username, password)
+            .then((response) => {
+                // The response indicates successful login
+                // You can decide what to do next, e.g., show a success message and close the login screen
+                console.log('Login successful');
+                closeLoginScreen();
+            })
+            .catch((error) => {
+                // Login failed, you can show an error message if needed
+                console.error('Login failed', error);
+            });
+    }
+
+    function checkCredentials(username, password) {
+      // Here, you can perform any checks you want for the username and password
+      // For the sake of this example, we'll consider any non-empty username and password as valid
+    
+      if (username.trim() !== '' && password.trim() !== '') {
+        // Assuming the credentials are valid, return a resolved promise with a response
+        return Promise.resolve({ success: true, message: 'Login successful' });
+      } else {
+        // If credentials are not valid, return a rejected promise with an error message
+        return Promise.reject({ success: false, message: 'Invalid credentials' });
+      }
+    }
+
+    function closeLoginScreen() {
+      // Hide the login form after successful login
+      const loginForm = document.getElementById('loginForm');
+      loginForm.style.display = 'none';
+    }
+			
+		</script>
+  
+	</body>
+</html>
